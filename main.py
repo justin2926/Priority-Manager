@@ -6,7 +6,6 @@ from database import *
 # primary window settings
 root = tk.Tk()
 root.title("PriorityManager")
-# root.geometry("500x700+700+200") # 700 + 200 for 14" MBP display (450x650)
 
 title = ttk.Label(root, text="PriorityManager", font=("Arial", 24))
 title.pack(padx=20,pady=20)
@@ -37,25 +36,33 @@ cal.pack(padx=10, pady=2)
 priority_label = ttk.Label(root, text="Priority:")
 priority_label.pack(padx=10, pady=2)
 
-priority_dropdown = ttk.Combobox(root, values=['Low','Medium','High'])
+priority_dropdown = ttk.Combobox(root, values=['Low','Medium','High'], state="readonly")
 priority_dropdown.pack(padx=10, pady=2)
+
+# treeview
+table = ttk.Treeview(root, columns=("Course", "Assignment", "Due Date", "Priority"), show = "headings")
+
+table.heading("Course", text="Course")
+table.column("Course", width=150)
+
+table.heading("Assignment", text="Assignment")
+table.column("Assignment", width=150)
+
+table.heading("Due Date", text="Due Date")
+table.column("Due Date", width=150)
+
+table.heading("Priority", text="Priority")
+table.column("Priority", width=150)
+
+table.pack(padx=10, pady=10, fill="both")
 
 # add button
 add_button = ttk.Button(root, text="Add")
 add_button.place(x=50, y=20)
-add_button.pack(padx=10, pady=2)
+add_button.pack(padx=10, pady=5)
 
 # remove button
 remove_button = ttk.Button(root, text="Remove")
-remove_button.pack(padx=10, pady=2)
-
-# treeview
-table = ttk.Treeview(root, columns=("Course", "Assignment", "Due Date", "Priority"), show = "headings")
-table.heading("Course", text="Course")
-table.heading("Assignment", text="Assignment")
-table.heading("Due Date", text="Due Date")
-table.heading("Priority", text="Priority")
-table.pack(padx=50, pady=5)
-
+remove_button.pack(padx=10, pady=5)
 
 root.mainloop()
