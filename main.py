@@ -1,11 +1,17 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import Calendar
-from database import add_task, delete_task, get_all_tasks, update_task
+from database import *
 
 # primary window settings
 root = tk.Tk()
 root.title("PriorityManager")
+
+root.update_idletasks()
+w, h = 800, 800
+x = (root.winfo_screenwidth() - w) // 2
+y = (root.winfo_screenheight() - h) // 2
+root.geometry(f"{w}x{h}+{x}+{y}")
 
 title = ttk.Label(root, text="PriorityManager", font=("Arial", 24))
 title.pack(padx=20,pady=20)
@@ -57,6 +63,8 @@ table.column("Priority", width=150)
 table.heading("Status", text="Status")
 table.column("Status", width=150)
 
+table.bind('<Button-1>')
+
 table.pack(padx=10, pady=10, fill="both")
 
 # add button
@@ -69,10 +77,13 @@ def on_add_click(event):
 
     if not course_input or not assignment_input or not date_input or not priority_input:
         messagebox.showwarning("Missing information", "ERROR: Inputs are not filled out completely!")
+        return
 
-    task_id = add_task(course_input, assignment_input, date_input, priority_input, status)
-    table.insert("", "end", iid=str(task_id), values=(course_input, assignment_input, date_input, priority_input, status))
+    task = add_task(course_input, assignment_input, date_input, priority_input, status)
+    table.insert("", "end", iid=str(task), values=(course_input, assignment_input, date_input, priority_input, status))
     print(f"You entered: {course_input}, {assignment_input}, {date_input}, {priority_input}, {status}")
+
+    messagebox.showinfo("Success", "Task added successfully!")
 
     course_entry.set("")
     assignment_entry.set("")
@@ -85,20 +96,59 @@ add_button.bind('<Button-1>', on_add_click)
 
 # remove button
 def on_remove_click(event):
-    return 0
+    row = table.focus()
+    selection = table.item(row, 'values')
+
+    if not selection:
+        messagebox.showerror("Error", "Please select a task!")
+        return
+
+    start = row.find("id=") + 3
+    end = row.find(",", start)
+    task_id = int(row[start:end])
+
+    delete_task(task_id)
+    table.delete(row)
+
+    messagebox.showinfo("Success", "Task removed successfully!")
 
 remove_button = ttk.Button(root, text="Remove")
 remove_button.pack(padx=10, pady=5)
+remove_button.bind('<Button-1>', on_remove_click)
 
 # status button
 def on_status_click(event):
-    return 0
+    row = table.focus()
+    selection = table.item(row, 'values')
+
+    if not selection:
+        messagebox.showerror("Error", "Please select a task!")
+        return
+
+    start = row.find("id=") + 3
+    end = row.find(",", start)
+    task_id = int(row[start:end])
+
+    change_status(task_id)
+    table.set(row, 'Status', 'completed')
+
+    messagebox.showinfo("Success", "Status changed successfully!")
 
 status_button = ttk.Button(root, text="Mark as done")
 status_button.pack(padx=10, pady=5)
+status_button.bind('<Button-1>', on_status_click)
 
 def refresh_table():
-    for task in get_all_tasks():
-        table.insert()
+    session = Session()
+
+    all_tasks = session.query(Task).all()
+
+    for row in table.get_children():
+        table.delete(row)
+
+    for task in all_tasks:
+        table.insert("", tk.END, text="", iid=str(task), values=(task.course, task.assignment, task.due_date, task.priority, task.status))
+
+refresh_table()
 
 root.mainloop()

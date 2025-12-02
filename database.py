@@ -1,17 +1,9 @@
-import sqlite3
-from datetime import datetime
 import sqlalchemy
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    Sequence,
-)
-from sqlalchemy.orm import (
-    declarative_base,
-    sessionmaker,
-)
+import sqlite3
+
+from sqlalchemy import create_engine, Column, Float, Integer, String, ForeignKey, Table, Sequence, func
+from sqlalchemy.orm import sessionmaker, relationship, declarative_base
+from sqlalchemy.orm import joinedload
 
 engine = create_engine("sqlite:///tasks.db", echo=False, future=True)
 Base = declarative_base()
@@ -41,12 +33,11 @@ class Task(Base):
 
 
 Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
 print("Database and tables created successfully")
-
 
 def get_session():
     return SessionLocal()
-
 
 def add_task(course: str, assignment: str, due_date: str,
              priority: str, status: str = "pending") -> Task:
@@ -66,52 +57,6 @@ def add_task(course: str, assignment: str, due_date: str,
     finally:
         session.close()
 
-
-def get_all_tasks(order_by_due_date: bool = False):
-    session = get_session()
-    try:
-        query = session.query(Task)
-        if order_by_due_date:
-            query = query.order_by(Task.due_date)
-        return query.all()
-    finally:
-        session.close()
-
-
-def get_task_by_id(task_id: int) -> Task | None:
-    session = get_session()
-    try:
-        return session.query(Task).filter(Task.id == task_id).first()
-    finally:
-        session.close()
-
-
-def get_tasks_by_course(course: str):
-    session = get_session()
-    try:
-        return session.query(Task).filter(Task.course == course).all()
-    finally:
-        session.close()
-
-
-def update_task(task_id: int, **fields) -> Task | None:
-    session = get_session()
-    try:
-        task = session.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            return None
-
-        for key, value in fields.items():
-            if hasattr(task, key):
-                setattr(task, key, value)
-
-        session.commit()
-        session.refresh(task)
-        return task
-    finally:
-        session.close()
-
-
 def delete_task(task_id: int) -> bool:
     session = get_session()
     try:
@@ -120,6 +65,19 @@ def delete_task(task_id: int) -> bool:
             return False
 
         session.delete(task)
+        session.commit()
+        return True
+    finally:
+        session.close()
+
+def change_status(task_id: int) -> bool:
+    session = get_session()
+    try:
+        task = session.query(Task).filter(Task.id == task_id).first()
+        if not task:
+            return False
+
+        task.status = 'completed'
         session.commit()
         return True
     finally:
